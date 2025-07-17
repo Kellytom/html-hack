@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Crank.js Examples - Comprehensive Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .example-section {
+        background: white;
+        margin: 20px 0;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .example-section h2 {
+        color: #333;
+        border-bottom: 2px solid #007acc;
+        padding-bottom: 10px;
+      }
+      .demo-container {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #005a9e;
+      }
+      input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 5px;
+      }
+      .counter {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007acc;
+      }
+      .todo-item {
+        padding: 10px;
+        margin: 5px 0;
+        background: #e9ecef;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .todo-item.completed {
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+      .timer {
+        font-size: 20px;
+        font-weight: bold;
+        color: #28a745;
+      }
+      .color-box {
+        width: 100px;
+        height: 100px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        display: inline-block;
+        margin: 10px;
+      }
+      .user-card {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px;
+        border-radius: 8px;
+        background: white;
+      }
+      .loading {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+      }
+      .error {
+        color: #dc3545;
+        background: #f8d7da;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🚀 Crank.js Comprehensive Examples</h1>
+    
+    <div id="hello-example"></div>
+    <div id="counter-example"></div>
+    <div id="todo-example"></div>
+    <div id="timer-example"></div>
+    <div id="color-example"></div>
+    <div id="form-example"></div>
+    <div id="async-example"></div>
+    <div id="context-example"></div>
+    <div id="fragment-example"></div>
+    <div id="portal-example"></div>
+
+    <script type="module">
+      // Try jspm.dev instead of esm.sh
+      import { createElement } from "https://jspm.dev/@bikeshaving/crank";
+      import { renderer } from "https://jspm.dev/@bikeshaving/crank/dom";
+
+      // 1. Basic Hello World with Props
+      function HelloWorld({name = "World", style = {}}) {
+        return createElement("div", {className: "example-section"}, 
+          createElement("h2", null, "1. Hello World with Props"),
+          createElement("div", {className: "demo-container"},
+            createElement("p", {style}, `Hello, ${name} from Crank!`),
+            createElement("p", null, `Style applied: ${JSON.stringify(style)}`)
+          )
+        );
+      }
+
+      // 2. Stateful Counter Component
+      function* Counter({initialCount = 0, step = 1}) {
+        let count = initialCount;
+        
+        while (true) {
+          yield createElement("div", {className: "example-section"},
+            createElement("h2", null, "2. Stateful Counter"),
+            createElement("div", {className: "demo-container"},
+              createElement("div", {className: "counter"}, `Count: ${count}`),
+              createElement("button", {
+                onclick: () => { count += step; this.refresh(); }
+              }, `+${step}`),
+              createElement("button", {
+                onclick: () => { count -= step; this.refresh(); }
+              }, `-${step}`),
+              createElement("button", {
+                onclick: () => { count = 0; this.refresh(); }
+              }, "Reset")
+            )
+          );
+        }
+      }
+
+      // 3. Todo List with State Management
+      function* TodoList() {
+        let todos = [
+          {id: 1, text: "Learn Crank.js", completed: false},
+          {id: 2, text: "Build awesome apps", completed: false}
+        ];
+        let nextId = 3;
+        let newTodoText = "";
+
+        const addTodo = () => {
+          if (newTodoText.trim()) {
+            todos.push({id: nextId++, text: newTodoText, completed: false});
+            newTodoText = "";
+            this.refresh();
+          }
+        };
+
+        const toggleTodo = (id) => {
+          todos = todos.map(todo => 
+            todo.id === id ? {...todo, completed: !todo.completed} : todo
+          );
+          this.refresh();
+        };
+
+        const deleteTodo = (id) => {
+          todos = todos.filter(todo => todo.id !== id);
+          this.refresh();
+        };
+
+        while (true) {
+          yield createElement("div", {className: "example-section"},
+            createElement("h2", null, "3. Todo List"),
+            createElement("div", {className: "demo-container"},
+              createElement("div", null,
+                createElement("input", {
+                  type: "text",
+                  placeholder: "Add new todo...",
+                  value: newTodoText,
+                  oninput: (e) => { newTodoText = e.target.value; }
+                }),
+                createElement("button", {onclick: addTodo}, "Add Todo")
+              ),
+              createElement("div", null,
+                ...todos.map(todo => 
+                  createElement("div", {
+                    key: todo.id,
+                    className: `todo-item ${todo.completed ? 'completed' : ''}`
+                  },
+                    createElement("span", null, todo.text),
+                    createElement("div", null,
+                      createElement("button", {
+                        onclick: () => toggleTodo(todo.id)
+                      }, todo.completed ? "Undo" : "Complete"),
+                      createElement("button", {
+                        onclick: () => deleteTodo(todo.id)
+                      }, "Delete")
+                    )
+                  )
+                )
+              )
+            )
+          );
+        }
+      }
+
+      // 4. Timer with useEffect-like behavior
+      function* Timer() {
+        let seconds = 0;
+        let isRunning = false;
+        let intervalId = null;
+
+        const start = () => {
+          if (!isRunning) {
+            isRunning = true;
+            intervalId = setInterval(() => {
+              seconds++;
+              this.refresh();
+            }, 1000);
+          }
+        };
+
+        const stop = () => {
+          if (isRunning) {
+            isRunning = false;
+            clearInterval(intervalId);
+          }
+        };
+
+        const reset = () => {
+          stop();
+          seconds = 0;
+          this.refresh();
+        };
+
+        try {
+          while (true) {
+            yield createElement("div", {className: "example-section"},
+              createElement("h2", null, "4. Timer Component"),
+              createElement("div", {className: "demo-container"},
+                createElement("div", {className: "timer"}, 
+                  `Time: ${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`
+                ),
+                createElement("button", {onclick: start}, "Start"),
+                createElement("button", {onclick: stop}, "Stop"),
+                createElement("button", {onclick: reset}, "Reset")
+              )
+            );
+          }
+        } finally {
+          // Cleanup
+          if (intervalId) clearInterval(intervalId);
+        }
+      }
+
+// 5. Color Picker - Fixed with proper contrast and reliable styling
+function* ColorPicker() {
+  let selectedColor = "#007acc";
+  const colors = ["#007acc", "#28a745", "#dc3545", "#ffc107", "#6f42c1", "#fd7e14"];
+
+  while (true) {
+    yield createElement("div", {
+      // Try setting style as a string instead of object
+      style: `background-color: ${selectedColor}; width: 200px; height: 200px; border: 5px solid black;`
+    },
+      createElement("h2", null, "String Style Test"),
+      createElement("p", null, `Color: ${selectedColor}`),
+      
+      createElement("div", null,
+        ...colors.map(color =>
+          createElement("button", {
+            key: color,
+            onclick: () => { 
+              selectedColor = color;
+              this.refresh(); 
+            }
+          }, color)
+        )
+      )
+    );
+  }
+}
+      // 6. Form with Validation
+      function* ContactForm() {
+        let formData = {name: "", email: "", message: ""};
+        let errors = {};
+        let submitted = false;
+
+        const validateForm = () => {
+          const newErrors = {};
+          if (!formData.name.trim()) newErrors.name = "Name is required";
+          if (!formData.email.includes("@")) newErrors.email = "Valid email required";
+          if (!formData.message.trim()) newErrors.message = "Message is required";
+          return newErrors;
+        };
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          errors = validateForm();
+          if (Object.keys(errors).length === 0) {
+            submitted = true;
+            // Reset form after 3 seconds
+            setTimeout(() => {
+              submitted = false;
+              formData = {name: "", email: "", message: ""};
+              this.refresh();
+            }, 3000);
+          }
+          this.refresh();
+        };
+
+        const updateField = (field, value) => {
+          formData[field] = value;
+          if (errors[field]) {
+            errors = {...errors};
+            delete errors[field];
+          }
+        };
+
+        while (true) {
+          yield createElement("div", {className: "example-section"},
+            createElement("h2", null, "6. Form with Validation"),
+            createElement("div", {className: "demo-container"},
+              submitted ? 
+                createElement("div", null, "✅ Form submitted successfully!") :
+                createElement("form", {onsubmit: handleSubmit},
+                  createElement("div", null,
+                    createElement("input", {
+                      type: "text",
+                      placeholder: "Name",
+                      value: formData.name,
+                      oninput: (e) => updateField("name", e.target.value)
+                    }),
+                    errors.name && createElement("div", {className: "error"}, errors.name)
+                  ),
+                  createElement("div", null,
+                    createElement("input", {
+                      type: "email",
+                      placeholder: "Email",
+                      value: formData.email,
+                      oninput: (e) => updateField("email", e.target.value)
+                    }),
+                    errors.email && createElement("div", {className: "error"}, errors.email)
+                  ),
+                  createElement("div", null,
+                    createElement("textarea", {
+                      placeholder: "Message",
+                      value: formData.message,
+                      oninput: (e) => updateField("message", e.target.value),
+                      rows: 4,
+                      style: {width: "100%", resize: "vertical"}
+                    }),
+                    errors.message && createElement("div", {className: "error"}, errors.message)
+                  ),
+                  createElement("button", {type: "submit"}, "Submit")
+                )
+            )
+          );
+        }
+      }
+
+      // 7. Async Data Fetching
+      function* AsyncUserList() {
+        let users = [];
+        let loading = false;
+        let error = null;
+
+        const fetchUsers = async () => {
+          loading = true;
+          error = null;
+          this.refresh();
+          
+          try {
+            const response = await fetch('https://jsonplaceholder.typicode.com/users');
+            if (!response.ok) throw new Error('Failed to fetch users');
+            users = await response.json();
+          } catch (err) {
+            error = err.message;
+          } finally {
+            loading = false;
+            this.refresh();
+          }
+        };
+
+        while (true) {
+          yield createElement("div", {className: "example-section"},
+            createElement("h2", null, "7. Async Data Fetching"),
+            createElement("div", {className: "demo-container"},
+              createElement("button", {
+                onclick: fetchUsers,
+                disabled: loading
+              }, loading ? "Loading..." : "Fetch Users"),
+              error && createElement("div", {className: "error"}, `Error: ${error}`),
+              loading && createElement("div", {className: "loading"}, "Loading users..."),
+              createElement("div", null,
+                ...users.map(user =>
+                  createElement("div", {
+                    key: user.id,
+                    className: "user-card"
+                  },
+                    createElement("h4", null, user.name),
+                    createElement("p", null, `Email: ${user.email}`),
+                    createElement("p", null, `Phone: ${user.phone}`)
+                  )
+                )
+              )
+            )
+          );
+        }
+      }
+
+      // 8. Context-like Data Sharing
+      function* ThemeProvider({children}) {
+        let theme = "light";
+        const toggleTheme = () => {
+          theme = theme === "light" ? "dark" : "light";
+          this.refresh();
+        };
+
+        while (true) {
+          yield createElement("div", {
+            className: "example-section",
+            style: {
+              backgroundColor: theme === "dark" ? "#333" : "#fff",
+              color: theme === "dark" ? "#fff" : "#333"
+            }
+          },
+            createElement("h2", null, "8. Theme Context"),
+            createElement("div", {className: "demo-container"},
+              createElement("button", {onclick: toggleTheme}, 
+                `Switch to ${theme === "light" ? "dark" : "light"} theme`
+              ),
+              createElement("p", null, `Current theme: ${theme}`),
+              createElement("div", null, children)
+            )
+          );
+        }
+      }
+      // 9. Fragment Example
+      function FragmentExample() {
+        return createElement("div", {className: "example-section"},
+          createElement("h2", null, "9. Fragment Example"),
+          createElement("div", {className: "demo-container"},
+            createElement("p", null, "This demonstrates multiple elements:"),
+            createElement("span", null, "Item 1"),
+            createElement("span", null, " | "),
+            createElement("span", null, "Item 2"),
+            createElement("span", null, " | "),
+            createElement("span", null, "Item 3"),
+            createElement("p", null, "Fragments help organize multiple sibling elements without extra wrapper divs.")
+          )
+        );
+      }
+
+      // 10. Portal Example
+      function* PortalExample() {
+        let showModal = false;
+
+        const openModal = () => {
+          showModal = true;
+          this.refresh();
+        };
+
+        const closeModal = () => {
+          showModal = false;
+          this.refresh();
+        };
+
+        while (true) {
+          yield createElement("div", {className: "example-section"},
+            createElement("h2", null, "10. Portal Example"),
+            createElement("div", {className: "demo-container"},
+              createElement("button", {onclick: openModal}, "Open Modal"),
+              createElement("p", null, "Click to open a modal that renders in a different part of the DOM."),
+              showModal && createElement("div", {className: "modal"},
+                createElement("div", {className: "modal-content"},
+                  createElement("h3", null, "Modal Title"),
+                  createElement("p", null, "This modal is rendered using a portal-like pattern."),
+                  createElement("button", {onclick: closeModal}, "Close Modal")
+                )
+              )
+            )
+          );
+        }
+      }
+
+      // Render all examples
+      renderer.render(
+        createElement(HelloWorld, {
+          name: "Crank Developer",
+          style: {color: "#007acc", fontWeight: "bold"}
+        }),
+        document.getElementById("hello-example")
+      );
+
+      renderer.render(
+        createElement(Counter, {initialCount: 5, step: 2}),
+        document.getElementById("counter-example")
+      );
+
+      renderer.render(
+        createElement(TodoList),
+        document.getElementById("todo-example")
+      );
+
+      renderer.render(
+        createElement(Timer),
+        document.getElementById("timer-example")
+      );
+
+      renderer.render(
+        createElement(ColorPicker),
+        document.getElementById("color-example")
+      );
+
+      renderer.render(
+        createElement(ContactForm),
+        document.getElementById("form-example")
+      );
+
+      renderer.render(
+        createElement(AsyncUserList),
+        document.getElementById("async-example")
+      );
+
+      renderer.render(
+        createElement(ThemeProvider, null,
+          createElement("p", null, "This content is inside the theme provider."),
+          createElement("div", null, "Theme affects this content too!")
+        ),
+        document.getElementById("context-example")
+      );
+
+      renderer.render(
+        createElement(FragmentExample),
+        document.getElementById("fragment-example")
+      );
+
+      renderer.render(
+        createElement(PortalExample),
+        document.getElementById("portal-example")
+      );
+
+    </script>
+  </body>
+</html>

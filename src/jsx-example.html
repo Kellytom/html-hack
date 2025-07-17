@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JSX Example</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/javascript">
+      function Hello(props) {
+        return React.createElement("div", null, `Hello, ${props.name} from plain JSX!`);
+      }
+      ReactDOM.render(React.createElement(Hello, {name: "World"}), document.getElementById("root"));
+    </script>
+  </body>
+</html>
