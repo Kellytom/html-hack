@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Minimal React CRUD Textarea List</title>
+  <title>Minimal React CRUD Markdown List</title>
   <style>
     body { font-family: sans-serif; margin: 2em; }
     textarea { width: 100%; min-height: 60px; resize: vertical; white-space: pre-wrap; }
@@ -10,28 +10,30 @@
     .text { flex: 1; padding: 0.5em; background: #f5f5f5; border-radius: 4px; margin-right: 0.5em; }
     button { margin-left: 0.25em; }
     .controls { margin-bottom: 1em; }
+    .text :not(pre) { white-space: pre-line; }
   </style>
 </head>
 <body>
   <div id="root"></div>
+  <!-- React -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const { useState, useEffect } = React;
-    const STORAGE_KEY = 'react_crud_textarea_list';
+    const STORAGE_KEY = 'react_crud_markdown_list';
 
     function App() {
       const [items, setItems] = useState([]);
       const [input, setInput] = useState('');
       const [editIndex, setEditIndex] = useState(null);
 
-      // Load from localStorage on mount
       useEffect(() => {
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) setItems(JSON.parse(data));
       }, []);
 
-      // Save to localStorage whenever items change
       useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
       }, [items]);
@@ -84,14 +86,20 @@
         }
       }
 
+      // Use marked to render markdown safely
+      function renderMarkdown(md) {
+        // Minimal sanitization: marked escapes HTML by default
+        return { __html: marked.parse(md, { breaks: true }) };
+      }
+
       return (
         React.createElement('div', null,
-          React.createElement('h2', null, 'Minimal React CRUD Textarea List'),
+          React.createElement('h2', null, 'Minimal React CRUD Markdown List'),
           React.createElement('div', { className: 'controls' },
             React.createElement('textarea', {
               value: input,
               onChange: e => setInput(e.target.value),
-              placeholder: 'Type your text here...'
+              placeholder: 'Type Markdown here...'
             }),
             React.createElement('br'),
             editIndex === null
@@ -100,9 +108,12 @@
             React.createElement('button', { onClick: handleClear }, 'Clear All')
           ),
           React.createElement('ul', { id: 'list', style: { padding: 0, listStyle: 'none' } },
-            items.map((text, i) =>
+            items.map((md, i) =>
               React.createElement('li', { className: 'list-item', key: i },
-                React.createElement('span', { className: 'text' }, text),
+                React.createElement('span', {
+                  className: 'text',
+                  dangerouslySetInnerHTML: renderMarkdown(md)
+                }),
                 React.createElement('button', { onClick: () => handleEdit(i) }, 'Edit'),
                 React.createElement('button', { onClick: () => handleDelete(i) }, 'Delete'),
                 React.createElement('button', { onClick: () => handleMove(i, -1) }, '↑'),
@@ -114,7 +125,8 @@
       );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
   </script>
 </body>
 </html>
