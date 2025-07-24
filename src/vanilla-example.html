@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD Textarea List</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    textarea { width: 100%; min-height: 60px; resize: vertical; white-space: pre-wrap; }
+    .list-item { display: flex; align-items: center; margin: 0.5em 0; }
+    .text { flex: 1; padding: 0.5em; background: #f5f5f5; border-radius: 4px; margin-right: 0.5em; }
+    button { margin-left: 0.25em; }
+    .controls { margin-bottom: 1em; }
+  </style>
+</head>
+<body>
+  <h2>CRUD Textarea List (LocalStorage)</h2>
+  <div class="controls">
+    <textarea id="input" placeholder="Type your text here..."></textarea><br>
+    <button onclick="addItem()">Add</button>
+    <button id="updateBtn" style="display:none;" onclick="updateItem()">Update</button>
+    <button onclick="clearAll()">Clear All</button>
+  </div>
+  <ul id="list"></ul>
+
+  <script>
+    // Local storage key
+    const STORAGE_KEY = 'crud_textarea_list';
+
+    // State
+    let items = [];
+    let editIndex = null;
+
+    // Load from localStorage on start
+    function load() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      items = data ? JSON.parse(data) : [];
+      render();
+    }
+
+    // Save to localStorage
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    // Render the list
+    function render() {
+      const ul = document.getElementById('list');
+      ul.innerHTML = '';
+      items.forEach((text, i) => {
+        const li = document.createElement('li');
+        li.className = 'list-item';
+
+        const span = document.createElement('span');
+        span.className = 'text';
+        span.textContent = text;
+        li.appendChild(span);
+
+        li.appendChild(createButton('Edit', () => startEdit(i)));
+        li.appendChild(createButton('Delete', () => deleteItem(i)));
+        li.appendChild(createButton('↑', () => moveItem(i, -1)));
+        li.appendChild(createButton('↓', () => moveItem(i, 1)));
+
+        ul.appendChild(li);
+      });
+
+      // Reset form
+      document.getElementById('input').value = '';
+      document.getElementById('updateBtn').style.display = 'none';
+      editIndex = null;
+    }
+
+    // Button factory
+    function createButton(label, fn) {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.onclick = fn;
+      return btn;
+    }
+
+    // Add item
+    function addItem() {
+      const val = document.getElementById('input').value.trim();
+      if (val) {
+        items.push(val);
+        save();
+        render();
+      }
+    }
+
+    // Start editing item
+    function startEdit(i) {
+      document.getElementById('input').value = items[i];
+      document.getElementById('updateBtn').style.display = 'inline';
+      editIndex = i;
+    }
+
+    // Update item
+    function updateItem() {
+      const val = document.getElementById('input').value.trim();
+      if (val && editIndex != null) {
+        items[editIndex] = val;
+        save();
+        render();
+      }
+    }
+
+    // Delete item
+    function deleteItem(i) {
+      items.splice(i, 1);
+      save();
+      render();
+    }
+
+    // Move item up/down
+    function moveItem(i, dir) {
+      const newIdx = i + dir;
+      if (newIdx >= 0 && newIdx < items.length) {
+        [items[i], items[newIdx]] = [items[newIdx], items[i]];
+        save();
+        render();
+      }
+    }
+
+    // Clear all
+    function clearAll() {
+      if (confirm('Clear all items?')) {
+        items = [];
+        save();
+        render();
+      }
+    }
+
+    // Initial load
+    load();
+  </script>
+</body>
+</html>
