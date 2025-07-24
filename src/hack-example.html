@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Minimal React CRUD Markdown List</title>
+  <title>React CRUD Markdown List with File System Access API</title>
   <style>
     body { font-family: sans-serif; margin: 2em; }
     textarea { width: 100%; min-height: 60px; resize: vertical; white-space: pre-wrap; }
@@ -11,32 +11,83 @@
     button { margin-left: 0.25em; }
     .controls { margin-bottom: 1em; }
     .text :not(pre) { white-space: pre-line; }
+    .file-status { color: #065f46; font-size: 0.9em; margin-left: 0.5em; }
+    .file-error { color: #dc2626; font-size: 0.9em; margin-left: 0.5em; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-  <!-- React -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Marked.js for Markdown parsing -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const { useState, useEffect } = React;
     const STORAGE_KEY = 'react_crud_markdown_list';
+    const INPUT_KEY = 'react_crud_markdown_input';
 
     function App() {
       const [items, setItems] = useState([]);
       const [input, setInput] = useState('');
       const [editIndex, setEditIndex] = useState(null);
+      const [fileHandle, setFileHandle] = useState(null);
+      const [fileStatus, setFileStatus] = useState('');
 
+      // Load from localStorage on mount
       useEffect(() => {
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) setItems(JSON.parse(data));
+        const savedInput = localStorage.getItem(INPUT_KEY);
+        if (savedInput !== null) setInput(savedInput);
       }, []);
 
+      // Save items to localStorage AND file (if chosen) whenever items change
       useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        saveToFile(items);
       }, [items]);
+
+      // Save input to localStorage AND file (if chosen) whenever input changes
+      useEffect(() => {
+        localStorage.setItem(INPUT_KEY, input);
+        saveToFile(items); // Also save latest items (if fileHandle is set)
+      }, [input]);
+
+      // Save app state to the chosen file (if File System Access API is available and fileHandle set)
+      async function saveToFile(newItems) {
+        if (fileHandle) {
+          try {
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(newItems));
+            await writable.close();
+            setFileStatus(`Saved to: ${fileHandle.name || 'chosen file'}`);
+          } catch (err) {
+            setFileStatus('Error saving to file!');
+          }
+        }
+      }
+
+      // Allow user to choose/create a file
+      async function chooseFile() {
+        if ('showSaveFilePicker' in window) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: 'app-state.json',
+              types: [{
+                description: 'JSON Files',
+                accept: {'application/json': ['.json']}
+              }]
+            });
+            setFileHandle(handle);
+            setFileStatus(`File chosen: ${handle.name || 'unnamed'}`);
+            // Write current state immediately after choosing
+            await saveToFile(items);
+          } catch (err) {
+            setFileStatus('File selection cancelled or failed.');
+          }
+        } else {
+          setFileStatus('File System Access API not supported in this browser.');
+        }
+      }
 
       function handleAdd() {
         const val = input.trim();
@@ -86,15 +137,39 @@
         }
       }
 
-      // Use marked to render markdown safely
+      // Export to JSON file (regular download, optional)
+      function handleExport() {
+        const blob = new Blob([JSON.stringify(items)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "app-state.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // Import from JSON file (optional)
+      function handleImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const loaded = JSON.parse(ev.target.result);
+            if (Array.isArray(loaded)) setItems(loaded);
+            else alert("Invalid file format.");
+          } catch { alert("Invalid file format."); }
+        };
+        reader.readAsText(file);
+      }
+
       function renderMarkdown(md) {
-        // Minimal sanitization: marked escapes HTML by default
         return { __html: marked.parse(md, { breaks: true }) };
       }
 
       return (
         React.createElement('div', null,
-          React.createElement('h2', null, 'Minimal React CRUD Markdown List'),
+          React.createElement('h2', null, 'React CRUD Markdown List with File System Access API'),
           React.createElement('div', { className: 'controls' },
             React.createElement('textarea', {
               value: input,
@@ -105,7 +180,23 @@
             editIndex === null
               ? React.createElement('button', { onClick: handleAdd }, 'Add')
               : React.createElement('button', { onClick: handleUpdate }, 'Update'),
-            React.createElement('button', { onClick: handleClear }, 'Clear All')
+            React.createElement('button', { onClick: handleClear }, 'Clear All'),
+            React.createElement('button', { onClick: handleExport }, 'Save to File (Download)'),
+            React.createElement('input', {
+              type: 'file',
+              accept: '.json',
+              style: { display: 'none' },
+              id: 'importFile',
+              onChange: handleImport
+            }),
+            React.createElement('button', {
+              onClick: () => document.getElementById('importFile').click()
+            }, 'Load from File'),
+            React.createElement('button', { onClick: chooseFile }, 'Choose Save File (Autosave)'),
+            fileStatus &&
+              React.createElement('span', {
+                className: fileStatus.startsWith('Error') ? 'file-error' : 'file-status'
+              }, fileStatus)
           ),
           React.createElement('ul', { id: 'list', style: { padding: 0, listStyle: 'none' } },
             items.map((md, i) =>
